@@ -1,0 +1,7 @@
+Poly Haven asset: Leafy Grass
+Source: https://polyhaven.com/a/leafy_grass
+License: CC0 (https://polyhaven.com/license)
+Resolution used: 2K
+Maps: Diffuse, OpenGL Normal, AO/Roughness/Metal
+Physical source width: 2 meters
+Imported for the Hand2 Unity project.
