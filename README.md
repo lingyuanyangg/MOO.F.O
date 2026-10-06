@@ -32,6 +32,20 @@ flowchart LR
     D --> B
 ```
 
+## Controllers and performance gestures
+
+Each role uses a different physical interface, giving the performers distinct ways to move, attack, and shape their improvisation.
+
+| Role | Controller | Performance controls |
+| --- | --- | --- |
+| **Cow** | **PS5 DualSense controller** | Move with the **left analog stick**. Hold the **cross (× / X)** button to eat grass; press the **triangle (△)** button to fire milk projectiles. |
+| **Alien** | **ElastremeSense Manu-5D e-skin data glove kit** and **keyboard** | Move with **W/S/A/D**. The glove's five **movement detectors** trigger attacks. |
+| **UFO** | **Drawing tablet interface using iDraw-OSC** | Drawing **X/Y position** controls movement; **stylus pressure** controls the laser. |
+
+The cow combines joystick movement with discrete button actions. The alien combines keyboard navigation with movement-triggered glove gestures. The UFO uses a continuous drawing gesture whose pressure changes laser strength and heat accumulation. These interfaces give each role a different relationship between physical action, game strategy, and musical phrasing.
+
+The glove hardware and processing are documented in [glove-system](https://github.com/lingyuanyangg/glove-system). The drawing interface is provided by [iDraw-OSC, by Gwangyu Lee](https://github.com/gwangyu-lee/iDraw-OSC). See the [controller integration details](docs/TECHNICAL.md#physical-controllers-and-routing) for OSC routing and setup.
+
 ## Chance and changing conditions
 
 The performance rule map includes entering an underwater world and applying a global filter. Such events change the perceptual environment and invite performers to reconsider their strategies.
@@ -57,7 +71,7 @@ The musical relationships described above express the performance design. This r
 2. Open its root folder in Unity Hub with **Unity 6000.4.9f1**, and allow the package dependencies to resolve.
 3. Open `Assets/Scenes/HandLowPoly.unity`.
 4. On the `OSCcontrol` object, configure the OSC receiver's local host for your machine and use UDP port **7001**, or update both sender and receiver to a matching port.
-5. Connect an OSC sender using the [documented addresses and value ranges](docs/TECHNICAL.md#osc-control-interface).
+5. Connect the DualSense, Manu-5D glove and keyboard, and iDraw-OSC drawing interface using the [controller routing](docs/TECHNICAL.md#physical-controllers-and-routing) and [documented addresses and value ranges](docs/TECHNICAL.md#osc-control-interface).
 6. Enter Play mode, choose a match duration, and press **START GAME**.
 
 A full performance additionally requires the performers' controllers, sound instruments or patches, and audio routing to be configured for the intended setup.

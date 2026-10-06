@@ -37,6 +37,51 @@ flowchart LR
 
 The implemented OSC path is **incoming control data → Unity gameplay and visuals**. A complete performance must also establish its sound instruments and mappings. The custom gameplay scripts expose properties such as health, milk, heat, stamina, and attack state within Unity, but do not transmit them to an external audio system. Any integration that needs those states must add its own output layer.
 
+## Physical controllers and routing
+
+The performance uses three interfaces: a PS5 DualSense for the cow, a Manu-5D glove with keyboard navigation for the alien, and a drawing tablet interface using iDraw-OSC for the UFO. The mappings below describe the performance setup and the inputs expected by Unity.
+
+### Cow: PS5 DualSense
+
+| Physical or mapped input | Unity OSC destination | Action |
+| --- | --- | --- |
+| Left analog stick X | `/GameControlLX` | Horizontal movement. |
+| Left analog stick Y | `/GameControlLY` | Movement on the arena's other horizontal axis. |
+| Cross (× / X) button | `/Eat` | Hold to eat grass and replenish milk; release to stop eating. |
+| Triangle (△) button | `/Shoot` | Request a milk projectile. |
+
+Convert stick values to **0–1**, with **0.5** at rest, before sending them to Unity. Map button presses to **1** and releases to **0**.
+
+The cow controller receives OSC and does not read the DualSense directly. The external controller-to-OSC bridge must supply these messages. The existing `/Jump` input remains available, but no DualSense jump-button assignment is specified by this performance setup.
+
+### Alien: Manu-5D glove and keyboard
+
+The [glove-system](https://github.com/lingyuanyangg/glove-system) is based on the **ElastremeSense Manu-5D e-skin data glove kit**. Its published signal path receives five values from an external acquisition source through an Arduino UNO R4 WiFi bridge. The Arduino sends `/servos` with five integers to UDP **7000**; `GloveRecevier` normalizes the values to 0–1 and publishes them on the Max bus `GLeft`.
+
+The five movement detectors in [Glovebang.maxpat](https://github.com/lingyuanyangg/glove-system/blob/main/max/source/Glovebang.maxpat) process these normalized channels using the CNMAT MMJ Depot `delta` abstraction, a nominal **10 ms** reference-update metro, a `> 0.2` comparison, and `sel 1`. The threshold can be adjusted. Detection responds to **positive changes** above the threshold; it is not an absolute-motion detector or a learned gesture classifier.
+
+For MOO.F.O., use the detector events to trigger the alien's five attack inputs: `/R1` (left hand), `/R2` (right hand), `/R3` (left foot), `/R4` (right foot), and `/R5` (head). Assign glove detector channels to these actions in the performance's OSC routing. Send **1 followed by 0** for each event so Unity's low-to-high trigger can re-arm.
+
+The published `Glovebang` device routes its detector events to MIDI note generation. Its receiver's optional OSC forwarding sends continuous finger values to `/glove/finger/0`–`/glove/finger/4` on localhost UDP **8000**. Neither path is a ready-made MOO.F.O. attack sender: route detector events to the Unity attack addresses on UDP **7001**. Finger-value forwarding alone does not reproduce movement detection. The exact detector-to-attack assignment and this OSC bridge are performance configuration, rather than included integration code.
+
+**W/S/A/D** controls alien movement directly through Unity's Input System: W/S provide forward/backward input and A/D provide left/right input, relative to the gameplay camera. Keyboard input does not pass through the glove or OSC receiver.
+
+For glove setup and detector dependencies, see the upstream [setup guide](https://github.com/lingyuanyangg/glove-system/blob/main/docs/SETUP.md) and [technical specification](https://github.com/lingyuanyangg/glove-system/blob/main/docs/TECHNICAL.md).
+
+### UFO: drawing tablet and iDraw-OSC
+
+[iDraw-OSC](https://github.com/gwangyu-lee/iDraw-OSC), by **Gwangyu Lee**, sends drawing data over OSC. Its documented workflow uses an iPad with an Apple Pencil or finger. The supplied [Max receiver example](https://github.com/gwangyu-lee/iDraw-OSC/blob/main/Max/Receive_iDraw.maxpat) listens on UDP **8800** and routes `/x`, `/y`, and `/pressure`, among other drawing parameters.
+
+| iDraw-OSC source | Unity OSC destination | Performance action |
+| --- | --- | --- |
+| `/x` | `/tabletX` | Control UFO movement on one horizontal axis. |
+| `/y` | `/tabletY` | Control UFO movement on the other horizontal axis. |
+| `/pressure` | `/tablePressure` or `/tabletPressure` | Control laser activation and strength. |
+
+Use a routing/normalization bridge to rename the incoming addresses and supply **0–1** values to Unity on UDP **7001**. Check the actual source ranges and axis directions during calibration. The upstream example's port 8800 is distinct from Unity's receiver port.
+
+Unity interprets the normalized X/Y values as movement input centered at **0.5**, rather than directly placing the UFO at absolute tablet coordinates. Pressure above **0.5** enables the beam when a valid target is available; greater pressure increases laser strength and heat accumulation. Send **0** pressure when the stylus is released. Use a pressure-capable stylus for continuous pressure control.
+
 ## OSC control interface
 
 The main scene stores receiver port **7001** and a machine-specific local host. Configure the receiver's local host for the machine running Unity; the sender's destination must match its reachable address and port.
@@ -116,7 +161,7 @@ The supplied performance rule map also describes an underwater world and a globa
 ## Setup and verification
 
 1. Open the project in the recorded Unity version and load `HandLowPoly.unity`.
-2. Configure `OSCcontrol` for the local machine and the sender's destination.
+2. Configure `OSCcontrol` for the local machine and the sender's destination. Set up the DualSense button/stick bridge, glove detector-event routing, and iDraw-OSC address/normalization bridge described above.
 3. Send 0.5 to the four cow/UFO movement axes and 0 to action and pressure inputs to establish neutral controls.
 4. Enter Play mode and start a match from the HUD.
 5. Verify movement, discrete attacks, sustained pressure, resource depletion and recovery, defeats, respawns, scores, and the result screen.
